@@ -1,6 +1,7 @@
 import javax.imageio.ImageIO;
 import javax.xml.crypto.Data;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.*;
 import java.lang.reflect.Array;
@@ -18,18 +19,6 @@ public class Converter {
     public Converter(File baseDir, File outputDir) {
         this.baseDir = baseDir;
         this.outputDir = outputDir;
-    }
-
-    private int[] convertToRGB(int grayScaleValue){
-        int remainder = grayScaleValue;
-        int[] rgbVals = {0,0,0};
-        for (int i = 2; i >= 0; i--){
-            int powerValue =(int)(remainder / Math.pow(255,i));
-            remainder -= Math.pow(255,i) * powerValue;
-            rgbVals[i] = powerValue;
-        }
-
-        return rgbVals;
     }
 
     public void convert() {
@@ -67,20 +56,31 @@ public class Converter {
             System.out.println("X MAX: " + maxX + " X MIN: " + minX);
             System.out.println("Y MAX: " + maxY + " Y MIN: " + minY);
             System.out.println("Z MAX: " + maxZ + " Z MIN: " + minZ);
+            int imageWidth = (int)(maxX - minX)*2;
+            int imageHeight = (int)(maxY - minY)*2;
 
-            BufferedImage heightMap = new BufferedImage((int)(maxX - minX)*2,(int)(maxY - minY)*2,BufferedImage.TYPE_INT_RGB);
-            for (int x = 0; x < heightMap.getWidth(); x++) {
-                for (int y = 0; y < heightMap.getHeight(); y++) {
+            short[] pixels = new short[imageWidth * imageHeight];
+            //BufferedImage heightMap = new BufferedImage(imageWidth,imageHeight,BufferedImage.TYPE_INT_RGB);
+            for (int x = 0; x < imageWidth; x++) {
+                for (int y = 0; y < imageHeight; y++) {
                     Double mapKey = imageContent.get(((x/2)+minX)+"|"+((y/2)+minY));
                     if (mapKey != null) {
-                        int singleGreyValue = (int) (16581375 * ((mapKey-minZ) / (maxZ-minZ)));
-                        int[] rgbVals = convertToRGB(singleGreyValue);
-                        System.out.println("Red:" + rgbVals[2] + " Blue:" + rgbVals[1] + " Green:" + rgbVals[0]);
-                        //System.out.println(new Color(rgbVals[2],rgbVals[1],rgbVals[0]).getRGB());
-                        heightMap.setRGB(x, y,new Color(rgbVals[2],rgbVals[1],rgbVals[0]).getRGB());
+                        short singleGreyValue = (short) (65536 * ((mapKey-minZ) / (maxZ-minZ)));
+                        int index = x * imageHeight + y;
+                        pixels[index] = singleGreyValue;
                     }
                 }
             }
+
+            //Stolen from https://stackoverflow.com/questions/6567110/create-image-in-java-using-16-bit-pixel-data
+            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
+            int[] nBits = {16};
+            ComponentColorModel cm = new ComponentColorModel(cs,nBits,false,true,Transparency.OPAQUE,DataBuffer.TYPE_USHORT);
+            SampleModel sm = cm.createCompatibleSampleModel(imageWidth,imageHeight);
+            DataBufferShort db = new DataBufferShort(pixels,imageWidth * imageHeight);
+            WritableRaster raster = Raster.createWritableRaster(sm,db,null);
+
+            BufferedImage heightMap = new BufferedImage(cm,raster,false,null);
 
             File outputfile = new File(outputDir + "/" + baseDir.toString().substring(baseDir.toString().lastIndexOf('\\'),baseDir.toString().length()-4)+".png");
             ImageIO.write(heightMap, "png", outputfile);
