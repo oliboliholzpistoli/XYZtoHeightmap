@@ -38,20 +38,22 @@ public class Converter {
             HashMap<String,Double> imageContent = new HashMap<>();
 
             for (String s:splitString){
-                String[] ss = s.split(" ");
-                double x = Double.parseDouble(ss[0]);
-                double y = Double.parseDouble(ss[1]);
-                double z = Double.parseDouble(ss[2]);
+                if (s.matches("[0-9. ]+")) {
+                    String[] ss = s.split(" ");
+                    double x = Double.parseDouble(ss[0]);
+                    double y = Double.parseDouble(ss[1]);
+                    double z = Double.parseDouble(ss[2]);
 
-                maxX = Math.max(maxX, x);
-                minX = minX < x && minX !=-1 ? minX: x;
-                maxY = Math.max(maxY, y);
-                minY = minY < y && minY !=-1 ? minY: y;
-                maxZ = Math.max(maxZ, z);
-                minZ = minZ < z && minZ !=-1 ? minZ: z;
-                System.out.println(i+"\t"+x+"|"+y +"|"+z);
-                i++;
-                imageContent.put(x+"|"+y,z);
+                    maxX = Math.max(maxX, x);
+                    minX = minX < x && minX !=-1 ? minX: x;
+                    maxY = Math.max(maxY, y);
+                    minY = minY < y && minY !=-1 ? minY: y;
+                    maxZ = Math.max(maxZ, z);
+                    minZ = minZ < z && minZ !=-1 ? minZ: z;
+                    System.out.println(i+"\t"+x+"|"+y +"|"+z);
+                    i++;
+                    imageContent.put(x+"|"+y,z);
+                }
             }
             System.out.println("X MAX: " + maxX + " X MIN: " + minX);
             System.out.println("Y MAX: " + maxY + " Y MIN: " + minY);
