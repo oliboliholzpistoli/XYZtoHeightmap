@@ -1,13 +1,10 @@
 import javax.imageio.ImageIO;
-import javax.xml.crypto.Data;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,9 +32,9 @@ public class Converter {
             double minZ = -1;
             int i = 0;
 
-            HashMap<String,Double> imageContent = new HashMap<>();
+            HashMap<String, Double> imageContent = new HashMap<>();
 
-            for (String s:splitString){
+            for (String s : splitString) {
                 if (s.matches("[0-9. ]+")) {
                     String[] ss = s.split(" ");
                     double x = Double.parseDouble(ss[0]);
@@ -45,30 +42,29 @@ public class Converter {
                     double z = Double.parseDouble(ss[2]);
 
                     maxX = Math.max(maxX, x);
-                    minX = minX < x && minX !=-1 ? minX: x;
+                    minX = minX < x && minX != -1 ? minX : x;
                     maxY = Math.max(maxY, y);
-                    minY = minY < y && minY !=-1 ? minY: y;
+                    minY = minY < y && minY != -1 ? minY : y;
                     maxZ = Math.max(maxZ, z);
-                    minZ = minZ < z && minZ !=-1 ? minZ: z;
-                    System.out.println(i+"\t"+x+"|"+y +"|"+z);
+                    minZ = minZ < z && minZ != -1 ? minZ : z;
+                    System.out.println(i + "\t" + x + "|" + y + "|" + z);
                     i++;
-                    imageContent.put(x+"|"+y,z);
+                    imageContent.put(x + "|" + y, z);
                 }
             }
             System.out.println("X MAX: " + maxX + " X MIN: " + minX);
             System.out.println("Y MAX: " + maxY + " Y MIN: " + minY);
             System.out.println("Z MAX: " + maxZ + " Z MIN: " + minZ);
-            int imageWidth = (int)(maxX - minX)*2;
-            int imageHeight = (int)(maxY - minY)*2;
+            int imageWidth = (int) (maxX - minX+1) * 2;
+            int imageHeight = (int) (maxY - minY+1) * 2;
 
             short[] pixels = new short[imageWidth * imageHeight];
-            //BufferedImage heightMap = new BufferedImage(imageWidth,imageHeight,BufferedImage.TYPE_INT_RGB);
-            for (int x = 0; x < imageWidth; x++) {
-                for (int y = 0; y < imageHeight; y++) {
-                    Double mapKey = imageContent.get(((x/2)+minX)+"|"+((y/2)+minY));
+            for (int y = 0; y < imageHeight; y++) {
+                for (int x = 0; x < imageWidth; x++) {
+                    Double mapKey = imageContent.get(((x / 2) + minX) + "|" + ((y / 2) + minY));
                     if (mapKey != null) {
-                        short singleGreyValue = (short) (65536 * ((mapKey-minZ) / (maxZ-minZ)));
-                        int index = x * imageHeight + y;
+                        short singleGreyValue = (short) (65536 * ((mapKey - minZ) / (maxZ - minZ)));
+                        int index = (imageHeight - (y+1)) * imageWidth + x;
                         pixels[index] = singleGreyValue;
                     }
                 }
@@ -77,14 +73,14 @@ public class Converter {
             //Stolen from https://stackoverflow.com/questions/6567110/create-image-in-java-using-16-bit-pixel-data
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
             int[] nBits = {16};
-            ComponentColorModel cm = new ComponentColorModel(cs,nBits,false,true,Transparency.OPAQUE,DataBuffer.TYPE_USHORT);
-            SampleModel sm = cm.createCompatibleSampleModel(imageWidth,imageHeight);
-            DataBufferShort db = new DataBufferShort(pixels,imageWidth * imageHeight);
-            WritableRaster raster = Raster.createWritableRaster(sm,db,null);
+            ComponentColorModel cm = new ComponentColorModel(cs, nBits, false, true, Transparency.OPAQUE, DataBuffer.TYPE_USHORT);
+            SampleModel sm = cm.createCompatibleSampleModel(imageWidth, imageHeight);
+            DataBufferShort db = new DataBufferShort(pixels, imageWidth * imageHeight);
+            WritableRaster raster = Raster.createWritableRaster(sm, db, null);
 
-            BufferedImage heightMap = new BufferedImage(cm,raster,false,null);
+            BufferedImage heightMap = new BufferedImage(cm, raster, false, null);
 
-            File outputfile = new File(outputDir + "/" + baseDir.toString().substring(baseDir.toString().lastIndexOf('\\'),baseDir.toString().length()-4)+".png");
+            File outputfile = new File(outputDir + "/" + baseDir.toString().substring(baseDir.toString().lastIndexOf('\\'), baseDir.toString().length() - 4) + ".png");
             ImageIO.write(heightMap, "png", outputfile);
             System.out.println("Done!");
 
